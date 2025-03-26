@@ -2,37 +2,35 @@ from lib.dataloader import *
 
 # Definition of the fnet, more details can be found in TecoGAN paper
 def fnet(fnet_input, reuse=False):
-    def down_block( inputs, output_channel = 64, stride = 1, scope = 'down_block'):
-        with tf.variable_scope(scope):
+    def down_block(inputs, output_channel=64, stride=1, scope='down_block'):
+        with tf.name_scope(scope):
             net = conv2(inputs, 3, output_channel, stride, use_bias=True, scope='conv_1')
             net = lrelu(net, 0.2)
             net = conv2(net, 3, output_channel, stride, use_bias=True, scope='conv_2')
             net = lrelu(net, 0.2)
             net = maxpool(net)
-
         return net
         
-    def up_block( inputs, output_channel = 64, stride = 1, scope = 'up_block'):
-        with tf.variable_scope(scope):
+    def up_block(inputs, output_channel=64, stride=1, scope='up_block'):
+        with tf.name_scope(scope):
             net = conv2(inputs, 3, output_channel, stride, use_bias=True, scope='conv_1')
             net = lrelu(net, 0.2)
             net = conv2(net, 3, output_channel, stride, use_bias=True, scope='conv_2')
             net = lrelu(net, 0.2)
             new_shape = tf.shape(net)[1:-1]*2
-            net = tf.image.resize_images(net, new_shape)
-
+            net = tf.image.resize(net, new_shape, method=tf.image.ResizeMethod.BILINEAR)
         return net
         
-    with tf.variable_scope('autoencode_unit', reuse=reuse):
-        net = down_block( fnet_input, 32, scope = 'encoder_1')
-        net = down_block( net, 64, scope = 'encoder_2')
-        net = down_block( net, 128, scope = 'encoder_3')
+    with tf.name_scope('autoencode_unit'):
+        net = down_block(fnet_input, 32, scope='encoder_1')
+        net = down_block(net, 64, scope='encoder_2')
+        net = down_block(net, 128, scope='encoder_3')
         
-        net = up_block( net, 256, scope = 'decoder_1')
-        net = up_block( net, 128, scope = 'decoder_2')
-        net1 = up_block( net, 64, scope = 'decoder_3')
+        net = up_block(net, 256, scope='decoder_1')
+        net = up_block(net, 128, scope='decoder_2')
+        net1 = up_block(net, 64, scope='decoder_3')
         
-        with tf.variable_scope('output_stage'):
+        with tf.name_scope('output_stage'):
             net = conv2(net1, 3, 32, 1, scope='conv1')
             net = lrelu(net, 0.2)
             net2 = conv2(net, 3, 2, 1, scope='conv2')
@@ -44,17 +42,17 @@ def fnet(fnet_input, reuse=False):
 def generator_F(gen_inputs, gen_output_channels, reuse=False, FLAGS=None):
     # Check the flag
     if FLAGS is None:
-        raise  ValueError('No FLAGS is provided for generator')
+        raise ValueError('No FLAGS is provided for generator')
 
     # The Bx residual blocks
-    def residual_block(inputs, output_channel = 64, stride = 1, scope = 'res_block'):
-        with tf.variable_scope(scope):
-            net = conv2(inputs, 3, output_channel, stride, use_bias=True, scope='conv_1')
-            net = tf.nn.relu(net)
-            net = conv2(net, 3, output_channel, stride, use_bias=True, scope='conv_2')
-            net = net + inputs
-
-        return net
+    def residual_block(inputs, output_channel=64, stride=1, scope='res_block'):
+        with tf.name_scope(scope):
+            net = conv2(inputs, 3, output_channel, stride, use_bias=False, scope='conv1')
+            net = batchnorm(net, is_training=True)
+            net = prelu_tf(net)
+            net = conv2(net, 3, output_channel, stride, use_bias=False, scope='conv2')
+            net = batchnorm(net, is_training=True)
+            return net + inputs
 
     with tf.variable_scope('generator_unit', reuse=reuse):
         # The input layer

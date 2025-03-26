@@ -31,10 +31,11 @@ Below you can find a quick start guide for running a trained TecoGAN model.
 For further explanations of the parameters take a look at the runGan.py file.  
 Note: evaluation (test case 2) currently requires an Nvidia GPU with `CUDA`. 
 `tkinter` is also required and may be installed via the `python3-tk` package.
+The code has been updated to be compatible with TensorFlow 2.x.
 
 ```bash
-# Install tensorflow1.8+,
-pip3 install --ignore-installed --upgrade tensorflow-gpu # or tensorflow
+# Install tensorflow 2.x
+pip3 install tensorflow  # or tensorflow-gpu if you have a GPU
 # Install PyTorch (only necessary for the metric evaluations) and other things...
 pip3 install -r requirements.txt
 

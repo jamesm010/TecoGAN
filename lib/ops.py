@@ -34,26 +34,52 @@ def deprocessLR(image):
 # Define the convolution transpose building block
 def conv2_tran(batch_input, kernel=3, output_channel=64, stride=1, use_bias=True, scope='conv'):
     # kernel: An integer specifying the width and height of the 2D convolution window
-    with tf.variable_scope(scope):
+    with tf.name_scope(scope):
         if use_bias:
-            return slim.conv2d_transpose(batch_input, output_channel, [kernel, kernel], stride, 'SAME', data_format='NHWC',
-                            activation_fn=None, weights_initializer=tf.contrib.layers.xavier_initializer())
+            return tf.keras.layers.Conv2DTranspose(
+                filters=output_channel,
+                kernel_size=kernel,
+                strides=stride,
+                padding='same',
+                data_format='channels_last',
+                use_bias=True,
+                kernel_initializer=tf.keras.initializers.GlorotUniform()
+            )(batch_input)
         else:
-            return slim.conv2d_transpose(batch_input, output_channel, [kernel, kernel], stride, 'SAME', data_format='NHWC',
-                            activation_fn=None, weights_initializer=tf.contrib.layers.xavier_initializer(),
-                            biases_initializer=None)
+            return tf.keras.layers.Conv2DTranspose(
+                filters=output_channel,
+                kernel_size=kernel,
+                strides=stride,
+                padding='same',
+                data_format='channels_last',
+                use_bias=False,
+                kernel_initializer=tf.keras.initializers.GlorotUniform()
+            )(batch_input)
 
 # Define the convolution building block
 def conv2(batch_input, kernel=3, output_channel=64, stride=1, use_bias=True, scope='conv'):
     # kernel: An integer specifying the width and height of the 2D convolution window
-    with tf.variable_scope(scope):
+    with tf.name_scope(scope):
         if use_bias:
-            return slim.conv2d(batch_input, output_channel, [kernel, kernel], stride, 'SAME', data_format='NHWC',
-                            activation_fn=None, weights_initializer=tf.contrib.layers.xavier_initializer())
+            return tf.keras.layers.Conv2D(
+                filters=output_channel,
+                kernel_size=kernel,
+                strides=stride,
+                padding='same',
+                data_format='channels_last',
+                use_bias=True,
+                kernel_initializer=tf.keras.initializers.GlorotUniform()
+            )(batch_input)
         else:
-            return slim.conv2d(batch_input, output_channel, [kernel, kernel], stride, 'SAME', data_format='NHWC',
-                            activation_fn=None, weights_initializer=tf.contrib.layers.xavier_initializer(),
-                            biases_initializer=None)
+            return tf.keras.layers.Conv2D(
+                filters=output_channel,
+                kernel_size=kernel,
+                strides=stride,
+                padding='same',
+                data_format='channels_last',
+                use_bias=False,
+                kernel_initializer=tf.keras.initializers.GlorotUniform()
+            )(batch_input)
 
 
 def conv2_NCHW(batch_input, kernel=3, output_channel=64, stride=1, use_bias=True, scope='conv_NCHW'):
@@ -71,36 +97,27 @@ def conv2_NCHW(batch_input, kernel=3, output_channel=64, stride=1, use_bias=True
 
 # Define our tensorflow version PRelu
 def prelu_tf(inputs, name='Prelu'):
-    with tf.variable_scope(name):
-        alphas = tf.get_variable('alpha', inputs.get_shape()[-1], initializer=tf.zeros_initializer(), \
-            collections=[tf.GraphKeys.GLOBAL_VARIABLES, tf.GraphKeys.TRAINABLE_VARIABLES, tf.GraphKeys.MODEL_VARIABLES ],dtype=tf.float32)
-    pos = tf.nn.relu(inputs)
-    neg = alphas * (inputs - abs(inputs)) * 0.5
-
-    return pos + neg
+    with tf.name_scope(name):
+        alpha = tf.Variable(initial_value=0.0, name='alpha')
+        return tf.keras.layers.PReLU(alpha_initializer=tf.constant_initializer(alpha))(inputs)
 
 
 # Define our Lrelu
 def lrelu(inputs, alpha):
-    return keras.layers.LeakyReLU(alpha=alpha).call(inputs)
+    return tf.keras.layers.LeakyReLU(alpha=alpha)(inputs)
 
 
 def batchnorm(inputs, is_training):
-    return slim.batch_norm(inputs, decay=0.9, epsilon=0.001, updates_collections=tf.GraphKeys.UPDATE_OPS,
-                        scale=False, fused=True, is_training=is_training)
+    return tf.keras.layers.BatchNormalization(trainable=is_training)(inputs)
 
 def maxpool(inputs, scope='maxpool'):
-    return slim.max_pool2d(inputs, [2, 2], scope=scope)
+    with tf.name_scope(scope):
+        return tf.keras.layers.MaxPooling2D(pool_size=(2, 2), strides=2)(inputs)
     
 # Our dense layer
 def denselayer(inputs, output_size):
     # Rachel todo, put it to Model variable_scope
-    denseLayer = tf.layers.Dense(output_size, activation=None, kernel_initializer=tf.contrib.layers.xavier_initializer())
-    output = denseLayer.apply(inputs)
-    tf.add_to_collection( name=tf.GraphKeys.MODEL_VARIABLES, value=denseLayer.kernel )
-    #output = tf.layers.dense(inputs, output_size, activation=None, kernel_initializer=tf.contrib.layers.xavier_initializer())
-    
-    return output
+    return tf.keras.layers.Dense(units=output_size)(inputs)
 
 # The implementation of PixelShuffler
 def pixelShuffler(inputs, scale=2):

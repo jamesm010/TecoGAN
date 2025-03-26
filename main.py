@@ -1,5 +1,5 @@
 import numpy as np
-import os, math, time, collections, numpy as np
+import os, math, time, collections
 ''' TF_CPP_MIN_LOG_LEVEL
 0 = all messages are logged (default behavior)
 1 = INFO messages are not printed
@@ -8,17 +8,14 @@ import os, math, time, collections, numpy as np
 Disable Logs for now '''
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import tensorflow as tf
-from tensorflow.python.util import deprecation
-deprecation._PRINT_DEPRECATION_WARNINGS = False
 import random as rn
 
 # fix all randomness, except for multi-treading or GPU process
 os.environ['PYTHONHASHSEED'] = '0'
 np.random.seed(42)
 rn.seed(12345)
-tf.set_random_seed(1234)
+tf.random.set_seed(1234)
 
-import tensorflow.contrib.slim as slim
 import sys, shutil, subprocess
 
 from lib.ops import *
@@ -26,10 +23,10 @@ from lib.dataloader import inference_data_loader, frvsr_gpu_data_loader
 from lib.frvsr import generator_F, fnet
 from lib.Teco import FRVSR, TecoGAN
 
+# Define flags using tf.compat.v1.flags for backward compatibility
+Flags = tf.compat.v1.flags
 
-Flags = tf.app.flags
-
-Flags.DEFINE_integer('rand_seed', 1 , 'random seed' )
+Flags.DEFINE_integer('rand_seed', 1, 'random seed')
 
 # Directories
 Flags.DEFINE_string('input_dir_LR', None, 'The directory of the input resolution input data, for inference mode')
@@ -110,7 +107,7 @@ os.environ["CUDA_VISIBLE_DEVICES"]=FLAGS.cudaID
 my_seed = FLAGS.rand_seed
 rn.seed(my_seed)
 np.random.seed(my_seed)
-tf.set_random_seed(my_seed)
+tf.random.set_seed(my_seed)
 
 # Check the output_dir is given
 if FLAGS.output_dir is None:
